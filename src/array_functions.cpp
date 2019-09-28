@@ -8,7 +8,8 @@
 //============================================================================
 //	TODO add necessary includes here
 #include "array_functions.h"
-//#include "constants.h"
+#include "utilities.h"
+#include "constants.h"
 #include <array>
 //============================================================================
 
@@ -18,8 +19,8 @@
 //TODO define a structure to track words and number of times they occur
 struct wordCounter
 {
-	std::string word = "";
-	int occurences = 0;
+	std::string word;
+	int occurences;
 };
 
 //TODO add a global array of entry structs (global to this file)
@@ -32,16 +33,28 @@ int nextAvailableSpot;
 //TODO define all functions in header file
 void clearArray()
 {
-	wordCounter temp;
-	temp.occurences=0;
-	temp.word="";
+	for (int i = 0; i < sizeof(wordCounterArray); i++)	{
+		if (wordCounterArray[i].occurences == 0)	{
+			break;
+		}
+		else	{
 
-	std::fill_n(wordCounterArray, 6, temp);
+			wordCounterArray[i].occurences = 0;
+			wordCounterArray[i].word="";
+		}
+	}
 }
 
 int getArraySize()
 {
-	return sizeof(wordCounterArray);
+	int size = 0;
+	for (int i = 0; i < sizeof(wordCounterArray); i++)	{
+		if (wordCounterArray[i].occurences != 0)
+			size++;
+		else if (wordCounterArray[i].occurences == 0)
+			return size;
+	}
+	return size;
 }
 
 std::string getArrayWordAt (int i)
@@ -58,14 +71,16 @@ bool processFile(std::fstream &myfstream)
 {
 	if (myfstream.is_open())
 	{
+		int i = 0;
 		std::string line;
-
 		while(!myfstream.eof())
 		{
+			i++;
 			getline(myfstream, line);
 			processLine(line);
 		}
-
+		if (i == 1 && getArraySize() == 0)
+			return false;
 		return true;
 	}
 	return false;
@@ -84,54 +99,75 @@ void processLine(std::string &myString)
 
 void processToken(std::string &token)
 {
+	if (strip_unwanted_chars(token) && getArraySize() == 0)	{
+		//std::cout << "token: " + token << std::endl;
+		wordCounterArray[0].word = token;
+		wordCounterArray[0].occurences = 1;
+		return;
+	}
+
 	for (int i = 0; i < sizeof(wordCounterArray); ++i)
 	{
-		if (wordCounterArray[i].occurences == 0)
-		{
-			wordCounterArray[i].word = token;
-			wordCounterArray[i].occurences++;
-			return;
-		}
-		else if (wordCounterArray[i].word == token)
-		{
-			wordCounterArray[i].occurences++;
-			return;
+		if (strip_unwanted_chars(token))	{
+			//std::cout << token << std::endl;
+			std::string uppernew = token;
+			std::string upperog = wordCounterArray[i].word;
+			toUpper(upperog);
+			toUpper(uppernew);
+			if (wordCounterArray[i].occurences == 0)	{
+
+				wordCounterArray[i].word = token;
+				wordCounterArray[i].occurences = 1;
+				break;
+			}
+			else if(upperog == uppernew)	{
+				wordCounterArray[i].occurences++;
+				break;
+			}
+			else if (wordCounterArray[i].word == token)	{
+				wordCounterArray[i].occurences++;
+				break;
+			}
 		}
 	}
 }
 
 bool openFile(std::fstream& myfile, const std::string& myFileName,
-		std::ios_base::openmode)
+		std::ios_base::openmode mode)
 {
-	myfile.open(myFileName.c_str());
-	if (myfile.is_open())
+	myfile.open(myFileName.c_str(), mode);
+	if (myfile.is_open())	{
 		return true;
+	}
 	return false;
 }
 
 void closeFile(std::fstream &myfile)
 {
-	myfile.close();
+	if (myfile.is_open())
+		myfile.close();
 }
 
 int writeArraytoFile(const std::string &outputfilename)
 {
+	std::ofstream myOutputfile;
+	myOutputfile.open(outputfilename.c_str());
+
 	for (int i = 0; i < sizeof(wordCounterArray); i++)
 	{
-		if (wordCounterArray[i].occurences == 0)
+		if (wordCounterArray[i].occurences == 0)	{
+			myOutputfile.close();
 			return 0;
+		}
 		else
 		{
-			std::string occurence = std::to_string(wordCounterArray[i].occurences);
+			std::string occurence = intToString(wordCounterArray[i].occurences);
 			std::string data = wordCounterArray[i].word + " " + occurence;
 
-			std::ofstream mystream;
-			mystream.open(outputfilename.c_str());
-
-//			outputfilename << data << '/n';
+			myOutputfile << data << std::endl;
 		}
 	}
-	return 0;
+	return -1;
 }
 
 void sortArray(constants::sortOrder so)
@@ -144,16 +180,26 @@ void sortArray(constants::sortOrder so)
 	switch(so)
 	{
 	case 1:
-		for (int i = 0; i < sizeof(wordCounterArray); ++i)
+		for (int i = 0; i < getArraySize(); i++)
 		{
-			for (int j = 1; j < sizeof(wordCounterArray) - i; ++j)
+			for (int j = 1; j < getArraySize() - i; j++)
 			{
-				if (wordCounterArray[j - 1].word > wordCounterArray[j].word)
+				std::string word1 = wordCounterArray[j-1].word;
+				std::string word2 = wordCounterArray[j].word;
+				toUpper(word1);
+				toUpper(word2);
+				if (word1 > word2)
 				{
 					temp = wordCounterArray[j - 1];
 					wordCounterArray[j - 1] = wordCounterArray[j];
 					wordCounterArray[j] = temp;
 				}
+//				if (wordCounterArray[j - 1].word > wordCounterArray[j].word)
+//				{
+//					temp = wordCounterArray[j - 1];
+//					wordCounterArray[j - 1] = wordCounterArray[j];
+//					wordCounterArray[j] = temp;
+//				}
 			}
 		}
 		break;

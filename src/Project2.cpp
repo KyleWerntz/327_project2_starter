@@ -32,6 +32,7 @@ int total_points =0;
 //they must be comparable with ==, templates are extremely hard to get right BTW
 template<typename T, typename U>
 bool EXPECT_EQ(T expectedVal, U actualVal,string testnumb = "", int pts=ONE_POINTS){
+
 	bool bout = (expectedVal == actualVal);
 	if (bout){
 		total_points+=pts;
@@ -171,16 +172,22 @@ void test_File_OpenClose(){
 bool test_File(string filename, sortOrder mysortorder= NONE){
 	clearArray();
 	fstream myfstream;
-	if (!openFile(myfstream, filename))
+	if (!openFile(myfstream, filename))	{
+		//std::cout << "coudln't open file" << std::endl;
 		return false;
+	}
 
-	if (!processFile(myfstream))
+	if (!processFile(myfstream))	{
+		//std::cout << "couldn't process file" << std::endl;
 		return false;
+	}
 
 	sortArray(mysortorder);
 	string name = TEST_DATA_FULL_OUT;
-	if ( writeArraytoFile(name)!= SUCCESS)
+	if ( writeArraytoFile(name)!= SUCCESS)	{
+		std::cout << "couldn't writeArraytoFile" << std::endl;
 		return false;
+	}
 
 	//NOTE: C++ does not support try-finally
 	//it expects you to use destructors instead
@@ -225,7 +232,7 @@ int main(int argc, char *argv[]) {
 	test_ProcessLine();
 	test_File_OpenClose();
 	test_system();
-	remove_file_debris();
+	//remove_file_debris();
 
 	string studentname = "Your";
 	if (argc == 2) {
